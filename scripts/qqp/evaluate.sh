@@ -25,8 +25,6 @@ CUDA_VISIBLE_DEVICES=$DEVICE fairseq-generate \
     --path $MODEL_DIR/difformer.pt:$MODEL_DIR/transformer.pt \
     --decoding-steps $STEPS \
     --decoding-early-stopping 5 \
-    --decoding-noise-schedule sqrt \
-    --decoding-noise-factor 1 \
     --length-beam-size $LENGTH_BEAM \
     --noise-beam-size $NOISE_BEAM \
     --ppl-mbr \
@@ -41,34 +39,34 @@ echo >> $OUTPUT_DIR/scores.txt
 
 # rouge
 grep ^T $OUTPUT_DIR/output.txt \
-| cut -f2- \
-> $OUTPUT_DIR/tmp/output.tok.ref
+    | cut -f2- \
+    > $OUTPUT_DIR/tmp/output.tok.ref
 
 grep ^H $OUTPUT_DIR/output.txt \
-| cut -f3- \
-> $OUTPUT_DIR/tmp/output.tok.sys
+    | cut -f3- \
+    > $OUTPUT_DIR/tmp/output.tok.sys
 
 if [ -n "$ROUGE_INSTALLED" ]; then
     files2rouge $OUTPUT_DIR/tmp/output.tok.ref $OUTPUT_DIR/tmp/output.tok.sys \
-    | sed -n 14p \
-    >> $OUTPUT_DIR/scores.txt
+        | sed -n 14p \
+        >> $OUTPUT_DIR/scores.txt
     echo >> $OUTPUT_DIR/scores.txt
 fi
 
 # bert score
 cat $OUTPUT_DIR/tmp/output.tok.ref \
-| sacremoses -l en -j 8 detokenize \
-> $OUTPUT_DIR/tmp/output.ref
+    | sacremoses -l en -j 8 detokenize \
+    > $OUTPUT_DIR/tmp/output.ref
 
 cat $OUTPUT_DIR/tmp/output.tok.sys \
-| sacremoses -l en -j 8 detokenize \
-> $OUTPUT_DIR/tmp/output.sys
+    | sacremoses -l en -j 8 detokenize \
+    > $OUTPUT_DIR/tmp/output.sys
 
 CUDA_VISIBLE_DEVICES=$DEVICE bert-score \
     -r $OUTPUT_DIR/tmp/output.ref \
     -c $OUTPUT_DIR/tmp/output.sys \
     --lang en --m "microsoft/deberta-xlarge-mnli" \
->> $OUTPUT_DIR/scores.txt
+    >> $OUTPUT_DIR/scores.txt
 
 echo "Finished $OUTPUT_NAME. Scores:"
 cat $OUTPUT_DIR/scores.txt

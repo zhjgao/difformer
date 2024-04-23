@@ -25,8 +25,6 @@ mkdir -p $OUTPUT_DIR/tmp
         --path $MODEL_DIR/difformer.pt:$MODEL_DIR/transformer.pt \
         --decoding-steps $STEPS \
         --decoding-early-stopping 5 \
-        --decoding-noise-schedule sqrt \
-        --decoding-noise-factor 1 \
         --length-beam-size $LENGTH_BEAM \
         --noise-beam-size $NOISE_BEAM \
         --ppl-mbr \

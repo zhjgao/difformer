@@ -34,18 +34,18 @@ class DifformerTask(TranslationLevenshteinTask):
 
         parser.add_argument(
             "--decoding-noise-schedule",
-            type=str, metavar="STR", default="sqrt",
+            type=str, metavar="STR",
             help="The noise schedule during decoding"
         )
         parser.add_argument(
-            "--decoding-noise-factor",
+            "--decoding-rescaling-factor",
             type=float, metavar="D", default=1.0,
-            help="The noise factor during decoding"
+            help="The rescaling factor during decoding"
         )
         parser.add_argument(
-            "--decoding-rescale-factor",
-            type=float, metavar="D", default=1.0,
-            help="The rescale factor during decoding"
+            "--decoding-vp-rf",
+            action="store_true",
+            help="Use the variance-preserving rescaling factor during decoding"
         )
 
         parser.add_argument(
@@ -88,9 +88,9 @@ class DifformerTask(TranslationLevenshteinTask):
         args.decoding_fixed_t = getattr(args, "decoding_fixed_t", None)
         args.early_stopping = getattr(args, "decoding_early_stopping", 0)
 
-        args.decoding_noise_schedule = getattr(args, "decoding_noise_schedule", "sqrt")
-        args.decoding_noise_factor = getattr(args, "decoding_noise_factor", 1.0)
-        args.decoding_rescale_factor = getattr(args, "decoding_rescale_factor", 1.0)
+        args.decoding_noise_schedule = getattr(args, "decoding_noise_schedule", None)
+        args.decoding_rescaling_factor = getattr(args, "decoding_rescaling_factor", 1.0)
+        args.decoding_vp_rf = getattr(args, "decoding_vp_rf", 1.0)
 
         args.clamping = getattr(args, "clamping", False)
 
@@ -127,8 +127,8 @@ class DifformerTask(TranslationLevenshteinTask):
         args.decoding_fixed_t = self.args.decoding_fixed_t
 
         args.decoding_noise_schedule = self.args.decoding_noise_schedule
-        args.decoding_noise_factor = self.args.decoding_noise_factor
-        args.decoding_rescale_factor = self.args.decoding_rescale_factor
+        args.decoding_rescaling_factor = self.args.decoding_rescaling_factor
+        args.decoding_vp_rf = self.args.decoding_vp_rf
 
         args.clamping = self.args.clamping
 

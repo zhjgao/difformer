@@ -24,7 +24,7 @@ def build_ffn(in_dim, ffn_dim, out_dim, activation_fn="relu", drop_out=None):
     return ffn
 
 
-def get_named_beta_schedule(schedule_name, num_diffusion_timesteps, rescale_factor=1.0):
+def get_named_beta_schedule(schedule_name, num_diffusion_timesteps, rescaling_factor=1.0):
     """
     Get a pre-defined beta schedule for the given name.
 
@@ -61,6 +61,6 @@ def get_named_beta_schedule(schedule_name, num_diffusion_timesteps, rescale_fact
     else:
         raise NotImplementedError(f"unknown beta schedule: {schedule_name}")
 
-    f2 = rescale_factor ** 2
+    f2 = rescaling_factor ** 2
     rescaled_alpha_bar = lambda t: alpha_bar(t) / (f2 - (f2 - 1) * alpha_bar(t))
     return betas_for_alpha_bar(num_diffusion_timesteps, rescaled_alpha_bar)

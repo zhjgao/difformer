@@ -1,10 +1,13 @@
 # Difformer
 
-The offical codebase for [Difformer: Empowering Diffusion Models on the Embedding Space for Text Generation](https://arxiv.org/abs/2212.09412).
+The official codebase for [Empowering Diffusion Models on the Embedding Space for Text Generation](https://arxiv.org/abs/2212.09412).
+
+![Overview](assets/overview.png)
 
 ## Getting started
 
-Our implementation is based on Python 3.8, PyTorch 1.11 and Fairseq 0.10.2. The following command will install the dependencies and this package in a Conda environment:
+Our implementation is based on Python 3.8, PyTorch 1.11 and Fairseq 0.10.2.
+The following command will install the dependencies and this package in a Conda environment:
 
 ```shell
 conda install pytorch==1.11.0 -c pytorch
@@ -13,7 +16,9 @@ pip install -e .
 
 ## Data preparing
 
-We follow the [instructions of Fairseq](https://github.com/facebookresearch/fairseq/tree/main/examples/translation#iwslt14-german-to-english-transformer) to preprocess the translation datasets. Then we adopt knowledge distillation using Transformer models trained on the same datasets. To binarize the distilled and tokenized datasets, run following command (take the IWSLT14 De-En dataset as an example):
+We follow the [instructions of Fairseq](https://github.com/facebookresearch/fairseq/tree/main/examples/translation#iwslt14-german-to-english-transformer) to preprocess the translation datasets.
+Then we adopt [knowledge distillation](https://github.com/facebookresearch/fairseq/tree/main/examples/nonautoregressive_translation#knowledge-distillation) using Transformer models trained on the same datasets.
+To binarize the distilled and tokenized datasets, run following command (take the IWSLT14 De-En dataset as an example):
 
 ```shell
 fairseq-preprocess \
@@ -36,7 +41,8 @@ bash scripts/iwslt14_de_en/train.sh
 
 ## Decoding and evaluation
 
-We apply checkpoint averaging instead of exponential moving averaging (EMA) of parameters before evaluation. Specifically, we report the performance of averaging best 5 checkpoints. An example script is provided:
+We apply checkpoint averaging instead of exponential moving averaging (EMA) of parameters before evaluation. Specifically, we report the performance of averaging best 5 checkpoints (using `scripts/average_checkpoints.py`).
+An example script to evaluate a specific checkpoint is provided:
 
 ```shell
 bash scripts/iwslt14_de_en/evaluate.sh
@@ -59,7 +65,7 @@ Please cite our paper if you find this codebase useful:
 
 ```bibtex
 @article{gao2022difformer,
-  title={Difformer: Empowering Diffusion Model on Embedding Space for Text Generation},
+  title={Empowering Diffusion Model on Embedding Space for Text Generation},
   author={Gao, Zhujin and Guo, Junliang and Tan, Xu and Zhu, Yongxin and Zhang, Fang and Bian, Jiang and Xu, Linli},
   journal={arXiv preprint arXiv:2212.09412},
   year={2022}
@@ -68,4 +74,4 @@ Please cite our paper if you find this codebase useful:
 
 ## Acknowledgments
 
-This codebase includes the code of [improved-diffusion](https://github.com/openai/improved-diffusion). Thank them for their contributions to the community.
+This codebase includes the code of [improved-diffusion](https://github.com/openai/improved-diffusion) and [Fairseq](https://github.com/facebookresearch/fairseq). Thank them for their contributions to the community.

@@ -2,7 +2,6 @@ from random import random
 
 import torch
 from torch import nn
-from torch.nn import functional as F
 
 from fairseq import utils
 from fairseq.models import register_model, register_model_architecture, transformer
@@ -51,17 +50,14 @@ class Difformer(NATransformerModel):
             help="The noise schedule during training"
         )
         parser.add_argument(
-            "--noise-factor",
+            "--rescaling-factor",
             type=float, metavar="D", default=1.0,
-            help="The noise factor during training"
+            help="The rescaling factor during training"
         )
         parser.add_argument(
-            "--rescale-factor",
-            type=float, metavar="D", default=1.0,
-            help="When change the noise factor, both the signal-to-noise ratio (SNR) of the \
-                noise schedule and the variance of $z_t$ are changed. The rescale factor only \
-                rescales the noise schedule, so that it has a equivalent SNR, but keeps the \
-                variance of $z_t$ unchanged."
+            "--vp-rf",
+            action="store_true",
+            help="Use the variance-preserving rescaling factor"
         )
 
         parser.add_argument(
@@ -110,7 +106,7 @@ class Difformer(NATransformerModel):
             betas=get_named_beta_schedule(
                 args.noise_schedule,
                 args.diffusion_steps,
-                args.rescale_factor
+                args.rescaling_factor if args.vp_rf else 1.0
             ),
             model_mean_type=None, model_var_type=None, loss_type=None
         )
@@ -119,9 +115,9 @@ class Difformer(NATransformerModel):
         self.decoding_diffusion = SpacedDiffusion(
             space_timesteps(args.diffusion_steps, str(args.decoding_steps)),
             betas=get_named_beta_schedule(
-                args.noise_schedule,
+                args.decoding_noise_schedule if args.decoding_noise_schedule else args.noise_schedule,
                 args.diffusion_steps,
-                args.decoding_rescale_factor
+                args.decoding_rescaling_factor if args.decoding_vp_rf else 1.0
             ),
             model_mean_type=None, model_var_type=None, loss_type=None
         )
@@ -226,7 +222,7 @@ class Difformer(NATransformerModel):
         t = torch.randint(0, self.args.diffusion_steps, [len(z_0)], device=z_0.device)
         model_t = t * self.timesteps_scale
 
-        noise = torch.randn_like(z_0) * self.args.noise_factor
+        noise = torch.randn_like(z_0) * self.args.rescaling_factor
         z_t = self.training_diffusion.q_sample(z_0, t, noise).type_as(z_0)
 
         # self-conditioning
@@ -280,7 +276,7 @@ class Difformer(NATransformerModel):
         # sample z_{t-1}
         t = torch.tensor(step, device=z_t.device)
         mean, _, log_variance = self.decoding_diffusion.q_posterior_mean_variance(z_0_hat, z_t, t)
-        noise = torch.randn_like(z_t) * self.args.decoding_noise_factor
+        noise = torch.randn_like(z_t) * self.args.decoding_rescaling_factor
 
         z_t = mean + (0.5 * log_variance).exp() * noise
         z_t = z_t.type_as(z_0_hat)
@@ -288,8 +284,7 @@ class Difformer(NATransformerModel):
         return z_t, z_0_hat
 
     def forward_output_layer(self, z_t, mask):
-        logits, tokens = self.decoder.output_layer(z_t).max(-1)
-        scores = F.log_softmax(logits, -1)
+        scores, tokens = self.decoder.output_layer(z_t).log_softmax(-1).max(-1)
         return tokens, scores, mask
 
     def initialize_z_t(self, encoder_out):
@@ -303,7 +298,7 @@ class Difformer(NATransformerModel):
         max_length = pred_length.clamp_(min=2).max()
         z_t = torch.randn(
             (len(pred_length), max_length, self.args.latent_dim),
-        ) * self.args.decoding_noise_factor
+        ) * self.args.decoding_rescaling_factor
 
         return z_t, pred_length
 
@@ -317,7 +312,7 @@ class Difformer(NATransformerModel):
         max_length = pred_length.clamp_(min=2).max()
         z_t = torch.randn(
             (len(pred_length), max_length, self.args.latent_dim),
-        ) * self.args.decoding_noise_factor
+        ) * self.args.decoding_rescaling_factor
 
         return z_t, pred_length
 
@@ -373,8 +368,8 @@ def base_architecture(args):
     args.diffusion_steps = getattr(args, "diffusion_steps", 2000)
 
     args.noise_schedule = getattr(args, "noise_schedule", "linear")
-    args.noise_factor = getattr(args, "noise_factor", 1.0)
-    args.rescale_factor = getattr(args, "rescale_factor", 1.0)
+    args.rescaling_factor = getattr(args, "rescaling_factor", 1.0)
+    args.vp_rf = getattr(args, "vp_rf", False)
 
     args.embed_norm = getattr(args, "embed_norm", False)
     args.embed_norm_affine = getattr(args, "embed_norm_affine", False)
@@ -401,7 +396,7 @@ def difformer_base(args):
 
 
 @register_model_architecture("difformer", "difformer_iwslt_de_en")
-def difformer_nat_iwslt_de_en(args):
+def difformer_iwslt_de_en(args):
     args.encoder_ffn_embed_dim = getattr(args, "encoder_ffn_embed_dim", 1024)
     args.encoder_attention_heads = getattr(args, "encoder_attention_heads", 4)
 

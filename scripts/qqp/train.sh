@@ -3,7 +3,7 @@
 DIFFUSION_STEPS=2000
 
 NOISE_SCHEDULE="sqrt"
-NOISE_FACTOR=4
+RESCALING_FACTOR=4
 
 LR="5e-4"
 MAX_TOKENS=8000
@@ -24,7 +24,7 @@ CUDA_VISIBLE_DEVICES=0 fairseq-train \
     --arch difformer_base \
     --share-all-embeddings \
     --diffusion-steps $DIFFUSION_STEPS \
-    --noise-schedule $NOISE_SCHEDULE --noise-factor $NOISE_FACTOR \
+    --noise-schedule $NOISE_SCHEDULE --rescaling-factor $RESCALING_FACTOR \
     --embed-norm --embed-norm-affine \
     --self-cond \
     --rescale-timesteps \
